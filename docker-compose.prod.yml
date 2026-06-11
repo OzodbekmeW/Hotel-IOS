@@ -2,6 +2,20 @@ version: "3.9"
 
 services:
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: hotelOS-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
   redis:
     image: redis:7-alpine
     container_name: hotelOS-redis
@@ -16,8 +30,6 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY}/reception:${IMAGE_TAG:-latest}
     container_name: hotelOS-reception
     restart: unless-stopped
-    ports:
-      - "8001:8001"
     environment:
       - REDIS_URL=redis://redis:6379
     depends_on:
@@ -28,8 +40,6 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY}/housekeeping:${IMAGE_TAG:-latest}
     container_name: hotelOS-housekeeping
     restart: unless-stopped
-    ports:
-      - "8002:8002"
     environment:
       - REDIS_URL=redis://redis:6379
     depends_on:
@@ -40,8 +50,6 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY}/room_service:${IMAGE_TAG:-latest}
     container_name: hotelOS-room-service
     restart: unless-stopped
-    ports:
-      - "8003:8003"
     environment:
       - REDIS_URL=redis://redis:6379
     depends_on:
@@ -52,8 +60,6 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY}/maintenance:${IMAGE_TAG:-latest}
     container_name: hotelOS-maintenance
     restart: unless-stopped
-    ports:
-      - "8004:8004"
     environment:
       - REDIS_URL=redis://redis:6379
     depends_on:
@@ -64,8 +70,6 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY}/dashboard:${IMAGE_TAG:-latest}
     container_name: hotelOS-dashboard
     restart: unless-stopped
-    ports:
-      - "8000:8000"
     environment:
       - REDIS_URL=redis://redis:6379
       - DASHBOARD_API_KEY=${DASHBOARD_API_KEY:-hotelOS-secret-2024}
@@ -80,11 +84,13 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY}/frontend:${IMAGE_TAG:-latest}
     container_name: hotelOS-frontend
     restart: unless-stopped
-    ports:
-      - "80:80"
     depends_on:
       - reception
       - housekeeping
       - room_service
       - maintenance
       - dashboard
+
+volumes:
+  caddy_data:
+  caddy_config:

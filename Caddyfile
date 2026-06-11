@@ -1,0 +1,3 @@
+hotel.ozodbekme.dev {
+    reverse_proxy frontend:80
+}

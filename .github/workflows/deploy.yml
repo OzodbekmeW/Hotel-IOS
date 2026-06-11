@@ -90,13 +90,13 @@ jobs:
       - name: Set repo name (lowercase)
         run: echo "REPO=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
-      - name: Copy docker-compose to server
+      - name: Copy config files to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USER }}
           key: ${{ secrets.DO_SSH_KEY }}
-          source: "docker-compose.prod.yml"
+          source: "docker-compose.prod.yml,Caddyfile"
           target: "/opt/hotelOS"
 
       - name: Deploy on server
