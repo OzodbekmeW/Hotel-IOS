@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0);    }
+  20%       { transform: translateX(-8px); }
+  40%       { transform: translateX(8px);  }
+  60%       { transform: translateX(-5px); }
+  80%       { transform: translateX(5px);  }
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .bg-gradient-card {
+    background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+  }
+  .bg-gradient-accent {
+    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+  }
+  .font-sora {
+    font-family: 'Sora', sans-serif;
+  }
+  .font-dm {
+    font-family: 'DM Sans', sans-serif;
+  }
+}

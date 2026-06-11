@@ -1,0 +1,90 @@
+version: "3.9"
+
+services:
+
+  redis:
+    image: redis:7-alpine
+    container_name: hotelOS-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  reception:
+    image: ghcr.io/${GITHUB_REPOSITORY}/reception:${IMAGE_TAG:-latest}
+    container_name: hotelOS-reception
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  housekeeping:
+    image: ghcr.io/${GITHUB_REPOSITORY}/housekeeping:${IMAGE_TAG:-latest}
+    container_name: hotelOS-housekeeping
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  room_service:
+    image: ghcr.io/${GITHUB_REPOSITORY}/room_service:${IMAGE_TAG:-latest}
+    container_name: hotelOS-room-service
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  maintenance:
+    image: ghcr.io/${GITHUB_REPOSITORY}/maintenance:${IMAGE_TAG:-latest}
+    container_name: hotelOS-maintenance
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  dashboard:
+    image: ghcr.io/${GITHUB_REPOSITORY}/dashboard:${IMAGE_TAG:-latest}
+    container_name: hotelOS-dashboard
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DASHBOARD_API_KEY=${DASHBOARD_API_KEY:-hotelOS-secret-2024}
+      - RECEPTION_URL=http://reception:8001
+      - ROOM_SERVICE_URL=http://room_service:8003
+      - MAINTENANCE_URL=http://maintenance:8004
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  frontend:
+    image: ghcr.io/${GITHUB_REPOSITORY}/frontend:${IMAGE_TAG:-latest}
+    container_name: hotelOS-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - reception
+      - housekeeping
+      - room_service
+      - maintenance
+      - dashboard

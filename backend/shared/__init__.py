@@ -1,0 +1,1 @@
+# HotelOS shared package

@@ -1,0 +1,88 @@
+version: "3.9"
+
+services:
+
+  redis:
+    image: redis:7-alpine
+    container_name: hotelOS-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  reception:
+    build:
+      context: .
+      dockerfile: reception_service/Dockerfile
+    container_name: hotelOS-reception
+    ports:
+      - "8001:8001"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: uvicorn reception_service.main:app --host 0.0.0.0 --port 8001
+
+  housekeeping:
+    build:
+      context: .
+      dockerfile: housekeeping_service/Dockerfile
+    container_name: hotelOS-housekeeping
+    ports:
+      - "8002:8002"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: uvicorn housekeeping_service.main:app --host 0.0.0.0 --port 8002
+
+  room_service:
+    build:
+      context: .
+      dockerfile: room_service_service/Dockerfile
+    container_name: hotelOS-room-service
+    ports:
+      - "8003:8003"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: uvicorn room_service_service.main:app --host 0.0.0.0 --port 8003
+
+  maintenance:
+    build:
+      context: .
+      dockerfile: maintenance_service/Dockerfile
+    container_name: hotelOS-maintenance
+    ports:
+      - "8004:8004"
+    environment:
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: uvicorn maintenance_service.main:app --host 0.0.0.0 --port 8004
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard_service/Dockerfile
+    container_name: hotelOS-dashboard
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DASHBOARD_API_KEY=hotelOS-secret-2024
+      - RECEPTION_URL=http://reception:8001
+      - ROOM_SERVICE_URL=http://room_service:8003
+      - MAINTENANCE_URL=http://maintenance:8004
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: uvicorn dashboard_service.main:app --host 0.0.0.0 --port 8000

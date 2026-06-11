@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HotelOS Dashboard</title>
+  <style>
+    /* ── Base ──────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────────── */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+
+    h1 { color: #38bdf8; font-size: 1.5rem; margin: 0; }
+
+    .badge {
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge.connected    { background: #166534; color: #86efac; }
+    .badge.disconnected { background: #7f1d1d; color: #fca5a5; }
+
+    /* ── Section labels ─────────────────────────────────────────────────── */
+    .section-title {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+      margin-top: 32px;
+    }
+
+    .section-title:first-of-type { margin-top: 0; }
+
+    /* ── Room grid ──────────────────────────────────────────────────────── */
+    .rooms-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 900px) {
+      .rooms-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .room-card {
+      background: #1e293b;
+      border-radius: 8px;
+      padding: 16px;
+      border: 2px solid transparent;
+      transition: border-color 0.3s, transform 0.15s;
+    }
+
+    .room-card:hover { transform: translateY(-2px); }
+
+    .room-card.CLEAN       { border-color: #16a34a; }
+    .room-card.DIRTY       { border-color: #dc2626; }
+    .room-card.CLEANING    { border-color: #ca8a04; }
+    .room-card.MAINTENANCE { border-color: #ea580c; }
+    .room-card.OCCUPIED    { border-color: #2563eb; }
+
+    .room-number { font-size: 1.25rem; font-weight: 700; }
+    .room-type   { font-size: 0.7rem;  color: #64748b; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .room-status { font-size: 0.75rem; margin-top: 4px; opacity: 0.8; }
+    .room-guest  { font-size: 0.7rem;  margin-top: 4px; color: #94a3b8; }
+
+    /* ── Tables ─────────────────────────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 8px;
+      font-size: 0.875rem;
+    }
+
+    th {
+      background: #1e293b;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    tr:hover td { background: rgba(30,41,59,0.5); }
+
+    .empty-cell {
+      text-align: center;
+      color: #475569;
+      font-style: italic;
+      padding: 20px 0;
+    }
+
+    /* ── Urgency colours ────────────────────────────────────────────────── */
+    .urgency-CRITICAL { color: #f87171; font-weight: 700; }
+    .urgency-HIGH     { color: #fb923c; }
+    .urgency-NORMAL   { color: #facc15; }
+    .urgency-LOW      { color: #86efac; }
+
+    /* ── Status pill ────────────────────────────────────────────────────── */
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .pill-RECEIVED   { background: #1e3a5f; color: #93c5fd; }
+    .pill-PREPARING  { background: #422006; color: #fbbf24; }
+    .pill-DELIVERING { background: #2d1657; color: #c084fc; }
+    .pill-DELIVERED  { background: #166534; color: #86efac; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🏨 HotelOS — Operations Dashboard</h1>
+  <span id="status-badge" class="badge disconnected">🔴 Disconnected</span>
+</header>
+
+<!-- ── Rooms ──────────────────────────────────────────────────────────── -->
+<p class="section-title">Rooms (10)</p>
+<div id="rooms-grid" class="rooms-grid">
+  <!-- populated by JS -->
+</div>
+
+<!-- ── Active Orders ──────────────────────────────────────────────────── -->
+<p class="section-title">Active Orders</p>
+<table id="orders-table">
+  <thead>
+    <tr>
+      <th>Order ID</th>
+      <th>Room</th>
+      <th>Items</th>
+      <th>Total</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<!-- ── Maintenance Queue ──────────────────────────────────────────────── -->
+<p class="section-title">Maintenance Queue</p>
+<table id="maintenance-table">
+  <thead>
+    <tr>
+      <th>Request ID</th>
+      <th>Room</th>
+      <th>Issue</th>
+      <th>Urgency</th>
+      <th>Technician</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<!-- ── Current Guests ─────────────────────────────────────────────────── -->
+<p class="section-title">Current Guests</p>
+<table id="guests-table">
+  <thead>
+    <tr>
+      <th>Guest ID</th>
+      <th>Name</th>
+      <th>Room</th>
+      <th>Check-in</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  'use strict';
+
+  const API_KEY = 'hotelOS-secret-2024';
+
+  /* ── State ───────────────────────────────────────────────────────────── */
+  const state = {
+    rooms:       {},   // room_number → room object
+    orders:      {},   // order_id    → order object
+    maintenance: {},   // request_id  → maintenance object
+    guests:      {},   // guest_id    → guest object
+  };
+
+  // Static room metadata (floor / type) derived from known inventory.
+  const ROOM_META = {
+    '101': { type: 'Single',     floor: 1 },
+    '102': { type: 'Single',     floor: 1 },
+    '103': { type: 'Double',     floor: 1 },
+    '104': { type: 'Double',     floor: 1 },
+    '105': { type: 'Suite',      floor: 1 },
+    '201': { type: 'Single',     floor: 2 },
+    '202': { type: 'Accessible', floor: 2 },
+    '203': { type: 'Double',     floor: 2 },
+    '204': { type: 'Double',     floor: 2 },
+    '205': { type: 'Suite',      floor: 2 },
+  };
+
+  /* ── Helpers ─────────────────────────────────────────────────────────── */
+  const shortId = (id) => id ? id.slice(0, 8) + '…' : '—';
+  const fmtUSD  = (n)  => typeof n === 'number' ? `$${n.toFixed(2)}` : '—';
+  const fmtDate = (s)  => s ? new Date(s).toLocaleString() : '—';
+
+  /* ── Event handler ───────────────────────────────────────────────────── */
+  function handleEvent(data) {
+    const { event_type, payload } = data;
+
+    if (!payload) return;
+
+    if (event_type && event_type.includes('room')) {
+      if (payload.room_number) {
+        state.rooms[payload.room_number] = {
+          ...(state.rooms[payload.room_number] || {}),
+          ...payload,
+        };
+      }
+    } else if (event_type && event_type.includes('order')) {
+      if (payload.order_id) {
+        state.orders[payload.order_id] = {
+          ...(state.orders[payload.order_id] || {}),
+          ...payload,
+        };
+      }
+    } else if (event_type && event_type.includes('maintenance')) {
+      if (payload.request_id) {
+        state.maintenance[payload.request_id] = {
+          ...(state.maintenance[payload.request_id] || {}),
+          ...payload,
+        };
+      }
+    } else if (event_type && event_type.includes('guest')) {
+      if (payload.guest_id) {
+        if (event_type.includes('checked_out')) {
+          delete state.guests[payload.guest_id];
+          // Clear guest reference from room
+          if (payload.room_number && state.rooms[payload.room_number]) {
+            delete state.rooms[payload.room_number].current_guest_id;
+          }
+        } else {
+          state.guests[payload.guest_id] = {
+            ...(state.guests[payload.guest_id] || {}),
+            ...payload,
+          };
+          // Mark room occupied
+          if (payload.room_number) {
+            state.rooms[payload.room_number] = state.rooms[payload.room_number] || {};
+            state.rooms[payload.room_number].status = 'OCCUPIED';
+            state.rooms[payload.room_number].current_guest_id = payload.guest_id;
+          }
+        }
+      }
+    }
+
+    render();
+  }
+
+  /* ── Render functions ────────────────────────────────────────────────── */
+
+  function renderRooms() {
+    const grid = document.getElementById('rooms-grid');
+    const allRooms = Object.keys(ROOM_META).map(rn => {
+      const meta = ROOM_META[rn];
+      const live = state.rooms[rn] || {};
+      return { room_number: rn, ...meta, ...live };
+    });
+
+    grid.innerHTML = allRooms.map(room => {
+      const status = room.status || 'CLEAN';
+      const guestId = room.current_guest_id;
+      const guestName = guestId && state.guests[guestId]
+        ? state.guests[guestId].name
+        : (guestId ? guestId.slice(0, 8) : null);
+
+      return `
+        <div class="room-card ${status}">
+          <div class="room-number">Room ${room.room_number}</div>
+          <div class="room-type">${room.type} · Floor ${room.floor}</div>
+          <div class="room-status">${status}</div>
+          <div class="room-guest">${guestName ? '👤 ' + guestName : '—'}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderOrders() {
+    const tbody = document.querySelector('#orders-table tbody');
+    const active = Object.values(state.orders).filter(o => o.status !== 'DELIVERED');
+
+    if (!active.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">No active orders</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = active.map(o => {
+      const itemNames = Array.isArray(o.items)
+        ? o.items.map(i => `${i.name} ×${i.quantity}`).join(', ')
+        : '—';
+      return `
+        <tr>
+          <td title="${o.order_id}">${shortId(o.order_id)}</td>
+          <td>${o.room_number}</td>
+          <td>${itemNames}</td>
+          <td>${fmtUSD(o.total)}</td>
+          <td><span class="pill pill-${o.status}">${o.status}</span></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  const URGENCY_RANK = { CRITICAL: 0, HIGH: 1, NORMAL: 2, LOW: 3 };
+
+  function renderMaintenance() {
+    const tbody = document.querySelector('#maintenance-table tbody');
+    const open = Object.values(state.maintenance)
+      .filter(m => !m.resolved)
+      .sort((a, b) => (URGENCY_RANK[a.urgency] ?? 9) - (URGENCY_RANK[b.urgency] ?? 9));
+
+    if (!open.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-cell">No open issues</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = open.map(m => `
+      <tr>
+        <td title="${m.request_id}">${shortId(m.request_id)}</td>
+        <td>${m.room_number || '—'}</td>
+        <td>${m.description || '—'}</td>
+        <td class="urgency-${m.urgency}">${m.urgency}</td>
+        <td>${m.assigned_technician || '—'}</td>
+        <td>${m.resolved ? '✅ Resolved' : '🔧 Open'}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderGuests() {
+    const tbody = document.querySelector('#guests-table tbody');
+    const guests = Object.values(state.guests);
+
+    if (!guests.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-cell">No guests checked in</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = guests.map(g => `
+      <tr>
+        <td title="${g.guest_id}">${shortId(g.guest_id)}</td>
+        <td>${g.name || '—'}</td>
+        <td>${g.room_number || '—'}</td>
+        <td>${fmtDate(g.check_in_time)}</td>
+      </tr>
+    `).join('');
+  }
+
+  function render() {
+    renderRooms();
+    renderOrders();
+    renderMaintenance();
+    renderGuests();
+  }
+
+  /* ── WebSocket ───────────────────────────────────────────────────────── */
+  function connectWS() {
+    const ws = new WebSocket(`ws://${location.host}/ws?token=${API_KEY}`);
+
+    ws.onopen = () => {
+      const badge = document.getElementById('status-badge');
+      badge.className = 'badge connected';
+      badge.textContent = '🟢 Connected';
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        handleEvent(JSON.parse(event.data));
+      } catch (e) {
+        console.error('[WS] Parse error:', e);
+      }
+    };
+
+    ws.onclose = () => {
+      const badge = document.getElementById('status-badge');
+      badge.className = 'badge disconnected';
+      badge.textContent = '🔴 Disconnected';
+      setTimeout(connectWS, 3000);
+    };
+
+    ws.onerror = (err) => {
+      console.warn('[WS] Error:', err);
+    };
+  }
+
+  /* ── Initial state load ──────────────────────────────────────────────── */
+  async function loadInitialState() {
+    try {
+      const res = await fetch('/api/state', {
+        headers: { 'X-API-Key': API_KEY },
+      });
+
+      if (!res.ok) {
+        console.warn('Could not load initial state:', res.status);
+        return;
+      }
+
+      const data = await res.json();
+
+      // Normalize arrays to keyed dicts.
+      if (Array.isArray(data.rooms)) {
+        data.rooms.forEach(r => { state.rooms[r.room_number] = r; });
+      }
+      if (Array.isArray(data.orders)) {
+        data.orders.forEach(o => { state.orders[o.order_id] = o; });
+      }
+      if (Array.isArray(data.maintenance)) {
+        data.maintenance.forEach(m => { state.maintenance[m.request_id] = m; });
+      }
+      if (Array.isArray(data.guests)) {
+        data.guests.forEach(g => { state.guests[g.guest_id] = g; });
+      }
+
+      render();
+    } catch (e) {
+      console.warn('Could not load initial state:', e);
+    }
+  }
+
+  /* ── Boot ────────────────────────────────────────────────────────────── */
+  render();            // paint empty placeholders immediately
+  loadInitialState();  // fetch REST snapshot
+  connectWS();         // open live event stream
+</script>
+
+</body>
+</html>
