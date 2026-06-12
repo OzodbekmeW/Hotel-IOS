@@ -2,6 +2,20 @@ version: "3.9"
 
 services:
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: hotelOS-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
   redis:
     image: redis:7-alpine
     container_name: hotelOS-redis
@@ -87,11 +101,14 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: hotelOS-frontend
-    ports:
-      - "3000:80"
+    restart: unless-stopped
     depends_on:
       - reception
       - housekeeping
       - room_service
       - maintenance
       - dashboard
+
+volumes:
+  caddy_data:
+  caddy_config:
