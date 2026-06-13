@@ -16,7 +16,7 @@ jobs:
           PRIVATE_KEY: ${{ secrets.DO_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$PRIVATE_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.DO_HOST }} >> ~/.ssh/known_hosts
 
