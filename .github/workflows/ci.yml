@@ -1,99 +1,17 @@
-name: CI — Build & Push Docker Images
+name: CI — Build Check
 
 on:
   push:
     branches: [main]
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_TAG: ${{ github.sha }}
+  pull_request:
+    branches: [main]
 
 jobs:
-  build-and-push:
-    name: Build Docker Images
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set repo name (lowercase)
-        run: echo "REPO=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
-
-      - name: Build & push reception
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/reception_service/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.REPO }}/reception:${{ env.IMAGE_TAG }}
-            ${{ env.REGISTRY }}/${{ env.REPO }}/reception:latest
-
-      - name: Build & push housekeeping
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/housekeeping_service/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.REPO }}/housekeeping:${{ env.IMAGE_TAG }}
-            ${{ env.REGISTRY }}/${{ env.REPO }}/housekeeping:latest
-
-      - name: Build & push room_service
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/room_service_service/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.REPO }}/room_service:${{ env.IMAGE_TAG }}
-            ${{ env.REGISTRY }}/${{ env.REPO }}/room_service:latest
-
-      - name: Build & push maintenance
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/maintenance_service/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.REPO }}/maintenance:${{ env.IMAGE_TAG }}
-            ${{ env.REGISTRY }}/${{ env.REPO }}/maintenance:latest
-
-      - name: Build & push dashboard
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/dashboard_service/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.REPO }}/dashboard:${{ env.IMAGE_TAG }}
-            ${{ env.REGISTRY }}/${{ env.REPO }}/dashboard:latest
-
-      - name: Build & push frontend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.REPO }}/frontend:${{ env.IMAGE_TAG }}
-            ${{ env.REGISTRY }}/${{ env.REPO }}/frontend:latest
-
-  deploy:
-    name: Trigger Deploy
-    needs: build-and-push
-    uses: ./.github/workflows/cd.yml
-    secrets: inherit
-    with:
-      image_tag: ${{ github.sha }}
+      - name: Build Docker images
+        run: docker compose -f docker-compose.prod.yml build
