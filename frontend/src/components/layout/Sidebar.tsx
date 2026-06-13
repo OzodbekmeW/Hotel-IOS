@@ -69,7 +69,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             </div>
             <div>
               <p className="font-sora font-bold text-white text-sm leading-tight">HotelOS</p>
-              <p className="text-xs text-slate-500 font-dm">Operations Suite</p>
+              <p className="text-xs text-slate-500 font-dm">Doston aka Suite</p>
             </div>
           </div>
           <button
