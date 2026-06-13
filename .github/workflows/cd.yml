@@ -1,26 +1,23 @@
 name: CD — Deploy to Digital Ocean
 
 on:
-  workflow_run:
-    workflows: ["CI — Build & Push Docker Images"]
-    types:
-      - completed
-    branches: [main]
+  workflow_call:
+    inputs:
+      image_tag:
+        required: true
+        type: string
 
 env:
-  IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+  IMAGE_TAG: ${{ inputs.image_tag }}
 
 jobs:
   deploy:
     name: Deploy to Digital Ocean
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set repo name (lowercase)
         run: echo "REPO=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV

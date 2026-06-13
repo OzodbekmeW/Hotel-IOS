@@ -89,3 +89,11 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.REPO }}/frontend:${{ env.IMAGE_TAG }}
             ${{ env.REGISTRY }}/${{ env.REPO }}/frontend:latest
+
+  deploy:
+    name: Trigger Deploy
+    needs: build-and-push
+    uses: ./.github/workflows/cd.yml
+    secrets: inherit
+    with:
+      image_tag: ${{ github.sha }}
